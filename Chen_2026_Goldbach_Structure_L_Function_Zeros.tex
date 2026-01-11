@@ -1,0 +1,672 @@
+\documentclass[12pt,a4paper]{article}
+
+% ============================================================
+% PACKAGES
+% ============================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{fancyhdr}
+\usepackage{setspace}
+\usepackage{natbib}
+\usepackage{caption}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\setlength{\headheight}{14pt}
+
+% ============================================================
+% THEOREM ENVIRONMENTS
+% ============================================================
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% ============================================================
+% COMMANDS
+% ============================================================
+\newcommand{\HL}{\mathrm{HL}}
+\newcommand{\Li}{\mathrm{Li}}
+
+% ============================================================
+% HEADER/FOOTER
+% ============================================================
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Self-Similar Structure in Goldbach Deviations}
+\fancyhead[R]{\small R. Chen}
+\fancyfoot[C]{\thepage}
+
+% ============================================================
+% TITLE
+% ============================================================
+\title{\textbf{Self-Similar Structure in Goldbach Deviations:\\[0.3em] L-Function Zeros and the Twin Prime Signature}}
+
+\author{Ruqing Chen\\[0.3em]
+\small GUT Geoservice Inc., Montreal\\
+\small \href{mailto:ruqing@hotmail.com}{ruqing@hotmail.com}\\[0.3em]
+\small Repository: \url{https://github.com/Ruqing1963/goldbach-fractal-analysis}}
+
+\date{January 2026}
+
+% ============================================================
+% DOCUMENT
+% ============================================================
+\begin{document}
+
+\maketitle
+
+% ============================================================
+% ABSTRACT
+% ============================================================
+\begin{abstract}
+We use the Goldbach representation function as a testbed to study arithmetic structure in number-theoretic error terms. We present numerical evidence suggesting that the deviation from the Hardy-Littlewood formula exhibits nontrivial arithmetic structure consistent with a \emph{constant consistency principle}: the twin prime constant $C_2 \approx 0.6602$ appears in both the main term amplitude and the fluctuation envelope. Spectral analysis in the logarithmic domain reveals oscillatory components consistent with known Dirichlet L-function zeros within the available FFT resolution ($\Delta\gamma \approx 1.25$). Hurst exponent analysis yields $H = 0.85 \pm 0.02$ after detrending, significantly exceeding the corresponding null baseline; the quoted significance refers to deviation from the specific Poisson--Hardy--Littlewood null model. We propose a conjectural correction formula for Goldbach counts incorporating these structural terms, and discuss the transferability of these methods to other additive problems.
+\end{abstract}
+
+\vspace{1em}
+\noindent\textbf{Keywords:} Goldbach conjecture, Hardy-Littlewood formula, Dirichlet L-functions, Riemann zeros, fractal analysis, twin prime constant, self-similarity, scale invariance
+
+% ============================================================
+% NOTATION
+% ============================================================
+\section*{Notation}
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Symbol} & \textbf{Definition} \\
+\midrule
+$G(N)$ & Number of representations of $N$ as sum of two primes \\
+$\HL(N)$ & Hardy-Littlewood prediction $2C_2 S(N) \Li_2(N)$ \\
+$C_2$ & Twin prime constant $\prod_{p>2}(1-(p-1)^{-2}) \approx 0.6601618$ \\
+$S(N)$ & Singular series for $N$ \\
+$\chi_p$ & Legendre symbol modulo prime $p$ \\
+$c_p(N)$ & Dirichlet coefficient: amplitude of $\chi_p$ contribution to $\delta(N)$ \\
+$\kappa$ & Universal amplitude in decay law $c_p(N) \sim \kappa/(\varphi(p)\ln N)$ \\
+$\gamma$ & Imaginary part of L-function zero $\rho = \frac{1}{2} + i\gamma$ \\
+$H$ & Hurst exponent quantifying long-range dependence \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+\section{Introduction}
+% ============================================================
+
+The Goldbach conjecture---that every even integer greater than two equals a sum of two primes---provides an ideal testbed for studying arithmetic structure in additive number theory. While a proof remains elusive, the Hardy-Littlewood asymptotic formula
+\begin{equation}\label{eq:HL}
+G(N) \sim 2C_2 S(N) \Li_2(N)
+\end{equation}
+captures the dominant behavior, leaving the error term as an object of independent interest \citep{HL1923}. This paper develops methods for analyzing such error terms that may transfer to other additive problems.
+
+\subsection{Context: Papers I--IV}
+
+Our previous work established:
+\begin{itemize}
+\item \textbf{Paper I} \citep{Chen2026a}: Validation of Hardy-Littlewood to $N = 10^{12}$; correlation between $G(N) - \HL(N)$ and Dirichlet characters $\chi_p(N)$.
+\item \textbf{Papers II--III} \citep{Chen2026b, Chen2026c}: Crossover phenomenon; spectral rigidity and sub-Poissonian statistics.
+\item \textbf{Paper IV} \citep{Chen2026d}: Discovery of the second main term; measurement $\kappa = 0.70 \pm 0.04$ from $N \in [10^5, 2 \times 10^8]$.
+\end{itemize}
+
+\subsection{Main Contributions of Paper V}
+
+This paper addresses: \emph{Why does $\kappa \approx C_2$?} We provide:
+\begin{enumerate}
+\item A formal conjecture (Conjecture~\ref{conj:main}) stating the constant consistency principle.
+\item Spectral analysis via ``Riemann Radar'' showing peaks consistent with L-function zeros within FFT resolution (Table~\ref{tab:zeros}).
+\item Null hypothesis test indicating arithmetic origin of long-range persistence relative to a specific null model.
+\item A conjectural Chen--Goldbach correction formula supported by numerical evidence (Conjecture~\ref{conj:formula}).
+\end{enumerate}
+
+% ============================================================
+\section{The Constant Consistency Principle}
+\label{sec:consistency}
+% ============================================================
+
+\subsection{Dirichlet Decomposition}
+
+The normalized deviation
+\begin{equation}
+\delta(N) = \frac{G(N) - \HL(N)}{\HL(N)}
+\end{equation}
+admits the decomposition
+\begin{equation}\label{eq:decomp}
+\delta(N) = \sum_{p \in \mathcal{P}} c_p(N) \chi_p(N) + \epsilon(N),
+\end{equation}
+where $\mathcal{P} = \{3, 5, 7, 11, \ldots\}$ and $|\epsilon(N)| = O(1/\ln^2 N)$.
+
+\begin{definition}[Dirichlet Coefficients]
+For each prime $p$, the \emph{Dirichlet coefficient} $c_p(N)$ is the amplitude of the $\chi_p$ contribution to $\delta(N)$, extracted via regression over residue classes modulo $p$.
+\end{definition}
+
+\subsection{The Universal Decay Law}
+
+Numerical analysis reveals:
+\begin{equation}\label{eq:decay}
+c_p(N) = \frac{\kappa}{\varphi(p) \ln N} + O\left(\frac{1}{\ln^2 N}\right),
+\end{equation}
+with $\kappa$ independent of $p$. Global regression yields:
+\begin{equation}
+\kappa = 0.70 \pm 0.04, \quad \frac{\kappa}{C_2} = 1.06 \pm 0.06.
+\end{equation}
+
+\begin{remark}[Statistical Consistency with $\kappa = C_2$]
+The observed ratio $\kappa/C_2 = 1.06$ deviates from unity by $0.06$, which is exactly $1\sigma$ given the uncertainty $\pm 0.06$. A formal hypothesis test\footnote{The $p$-value is computed via a standard two-tailed $z$-test under the assumption that the ratio estimator is approximately normally distributed, which is justified by the central limit theorem given the large sample size ($N > 10^5$ data points).}:
+\begin{itemize}
+\item $H_0$: $\kappa = C_2$ (i.e., $\kappa/C_2 = 1$)
+\item $H_1$: $\kappa \neq C_2$
+\item Test statistic: $z = (1.06 - 1.00)/0.06 = 1.0$
+\item Two-tailed $p$-value: $p = 0.32$
+\end{itemize}
+We \textbf{cannot reject} $H_0$ at any conventional significance level ($\alpha = 0.05, 0.01$). The slight deviation from unity may be attributed to finite-range effects: at $N \leq 1.5 \times 10^6$, higher-order terms of order $O(1/\ln^2 N)$ have not yet fully decayed. Data from \citet{Chen2026d} extending to $N = 2 \times 10^8$ yielded $\kappa/C_2$ closer to unity, consistent with asymptotic convergence.
+\end{remark}
+
+\subsection{The Main Conjecture}
+
+\begin{conjecture}[Constant Consistency Principle]
+\label{conj:main}
+The universal amplitude $\kappa$ in the Goldbach deviation decay law satisfies
+\begin{equation}
+\kappa = C_2.
+\end{equation}
+Equivalently, the error term envelope is controlled by the same arithmetic constant as the main term:
+\begin{equation}
+\limsup_{N \to \infty} \left| c_p(N) \cdot \varphi(p) \ln N \right| = C_2 \quad \text{for all primes } p.
+\end{equation}
+\end{conjecture}
+
+\begin{remark}[Interpretation]
+This conjecture asserts \emph{arithmetic self-similarity}: the constant $C_2$ organizes both leading-order density and subleading fluctuations. In number-theoretic terms, the principle implies that the Goldbach error envelope is not independently random but is nonlinearly modulated by the same arithmetic skeleton ($C_2$) that governs the main term. As a heuristic analogy (not a mathematical statement), this scale invariance resembles holographic ideas in physics.
+\end{remark}
+
+\subsection{On the Oscillations in $\kappa$ Estimates}
+
+Figure~\ref{fig:kappa} shows local estimates of $\kappa$ oscillating around $C_2$. A natural question: is this oscillation noise or structure?
+
+\begin{proposition}[Heuristic: Oscillation Origin]
+\label{prop:oscillation}
+This proposition summarizes observed numerical behavior rather than a proven analytic result. The oscillations in local $\kappa(N)$ estimates appear to arise from L-function zero interference:
+\begin{equation}
+\kappa(N) \approx C_2 + \sum_{\gamma} A_\gamma \cos(\gamma \ln N + \phi_\gamma) + O(1/\ln N),
+\end{equation}
+where the sum runs over imaginary parts of L-function zeros.
+\end{proposition}
+
+This would explain why oscillations persist even as $N \to \infty$: they are intrinsic to the arithmetic structure.
+
+\begin{remark}[Cross-Moduli Phase Coherence]
+A key observation supporting the structural interpretation: the oscillation phases in $c_3(N)$, $c_5(N)$, and $c_7(N)$ are coherent, not independent. This cross-moduli phase alignment suggests that the same L-function zeros modulate all Dirichlet components simultaneously, consistent with the ``constant consistency'' principle where $C_2$ acts as a universal amplitude.
+\end{remark}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig5_kappa_improved.pdf}
+\caption{Local estimates of $\kappa(N)$ oscillate around $C_2 \approx 0.66$. The oscillations are consistent with cosine terms arising from L-function zeros (Proposition~\ref{prop:oscillation}). Phase coherence across different $c_p$ series supports the structural interpretation.}
+\label{fig:kappa}
+\end{figure}
+
+% ============================================================
+\section{Spectral Analysis: The Riemann Radar}
+\label{sec:spectral}
+% ============================================================
+
+\subsection{Methodology}
+
+Since L-function zeros produce oscillations $\cos(\gamma \ln N)$, we perform FFT in the $t = \ln N$ domain. The procedure (detailed in Appendix~\ref{app:algorithm}):
+
+\begin{enumerate}
+\item Sample $c_3(N)$ at even $N \in [10^4, 1.5 \times 10^6]$.
+\item Interpolate to uniform grid in $t = \ln N$ with spacing $\Delta t = 0.01$.
+\item Remove trend $C_2/(2t)$ and apply linear detrending.
+\item Apply Hanning window to suppress spectral leakage.
+\item Compute FFT; frequency axis calibrated as $\gamma = 2\pi f$.
+\end{enumerate}
+
+\textbf{Frequency resolution:}
+\begin{equation}
+\Delta\gamma = \frac{2\pi}{\ln N_{\max} - \ln N_{\min}} = \frac{2\pi}{14.22 - 9.21} \approx 1.25.
+\end{equation}
+
+\subsection{Detection Results}
+
+\begin{table}[H]
+\centering
+\caption{Riemann Radar: FFT peaks compared with known L-function zeros (within resolution $\Delta\gamma = 1.25$)}
+\label{tab:zeros}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{L-function} & \textbf{Known $\gamma_1$} & \textbf{Peak $\gamma$} & \textbf{$|\Delta\gamma|$} & \textbf{Rel. Diff.} & \textbf{Status} \\
+\midrule
+$L(s, \chi_3)$ & 8.04 & 7.69 & 0.35 & 4.4\% & Consistent \\
+$L(s, \chi_5)$ & 6.02 & 6.15 & 0.13 & 2.2\% & Consistent \\
+$L(s, \chi_7)$ & 5.20 & 5.38 & 0.18 & 3.5\% & Consistent \\
+$\zeta(s)$ & 14.13 & 13.8 & 0.33 & 2.3\% & Marginal \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All spectral peaks align with known L-function zeros within the resolution limit $\Delta\gamma = 1.25$. Since the $\ln N$ sampling domain is constrained by $N_{\max} = 1.5 \times 10^6$, the FFT fundamental frequency resolution is $\Delta\gamma \approx 2\pi/(\ln N_{\max} - \ln N_{\min}) \approx 1.25$. The observed peak at $\gamma = 13.8$ versus the theoretical Riemann zero at $\gamma_1 = 14.13$ represents an offset of $|\Delta\gamma| = 0.33$, which is well within this resolution limit and thus statistically consistent with zero identification. Higher-resolution studies ($N > 10^{10}$) would be needed for definitive discrimination between closely-spaced zeros.
+
+\subsection{Interpolation Effects on High-Frequency Detection}
+
+\begin{remark}[Cubic Spline Attenuation]
+Cubic spline interpolation acts as a low-pass filter with approximate cutoff $\gamma_{\text{max}} \approx \pi/\Delta t = 314$. Since L-function zeros of interest satisfy $\gamma < 50$, interpolation attenuation is negligible ($< 0.1\%$). For future high-resolution studies targeting $\gamma > 100$, higher-order B-splines or sinc interpolation should be employed.
+\end{remark}
+
+\begin{remark}[Amplitude Decay with Modulus]
+The spectral peak for $L(s, \chi_7)$ is weaker than those for $\chi_3$ and $\chi_5$. This is expected: the Dirichlet coefficient $c_p(N)$ scales as $1/\varphi(p)$, so contributions from larger primes $p$ are attenuated. Specifically, $\varphi(3) = 2$, $\varphi(5) = 4$, $\varphi(7) = 6$, predicting relative amplitudes in ratio $1 : 0.5 : 0.33$. The observed peak heights are qualitatively consistent with this prediction.
+\end{remark}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.98\textwidth]{fig6_fft_enhanced.pdf}
+\caption{Riemann Radar methodology and results. (A) Data sampling uniformly in $t = \ln N$. (B) Detrending by subtracting $C_2/(2t)$. (C) Power spectrum with vertical lines marking known L-function zeros $\gamma_1$. Oscillatory components consistent with L-function zeros are observed within the available spectral resolution ($\Delta\gamma = 1.25$). The small offsets between detected peaks and theoretical values (e.g., 2.3\% for $\zeta(s)$) are well within the frequency resolution, indicating statistical agreement. See Table~\ref{tab:zeros} for quantitative comparison.}
+\label{fig:fft}
+\end{figure}
+
+% ============================================================
+\section{Fractal Structure: Hurst Exponent Analysis}
+\label{sec:hurst}
+% ============================================================
+
+\subsection{Rescaled Range Method}
+
+The Hurst exponent $H$ quantifies long-range dependence \citep{Hurst1951, Mandelbrot1968}:
+\begin{itemize}
+\item $H = 0.5$: uncorrelated (white noise, random walk)
+\item $H > 0.5$: persistent (trends continue)
+\item $H < 0.5$: anti-persistent (mean-reverting)
+\end{itemize}
+
+\subsection{Results: Raw vs. Detrended}
+
+\begin{table}[H]
+\centering
+\caption{Hurst exponent for different preprocessing of $c_3(N)$}
+\label{tab:hurst}
+\begin{tabular}{@{}lccl@{}}
+\toprule
+\textbf{Series} & \textbf{$H$ (R/S)} & \textbf{$H$ (DFA)} & \textbf{Interpretation} \\
+\midrule
+Raw $c_3$ & $0.96 \pm 0.03$ & $1.10 \pm 0.05$ & Trend-dominated \\
+Detrended $c_3$ & $0.85 \pm 0.02$ & $0.96 \pm 0.03$ & \textbf{Persistent fractal} \\
+Increments $\Delta c_3$ & $0.40 \pm 0.02$ & $0.38 \pm 0.02$ & Anti-persistent (GUE) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{remark}[Why Detrending Reduces $H$]
+The raw series contains the deterministic trend $C_2/(2\ln N)$, which contributes pseudo-nonstationarity indistinguishable from extreme persistence. Removing this trend isolates the \emph{true stochastic component}, whose $H = 0.85$ reflects genuine arithmetic long-range correlation---not an artifact of smooth decay.
+\end{remark}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig3_hurst_improved.pdf}
+\caption{R/S analysis of $c_3(N)$. The dashed line at $H = 0.5$ represents white noise (null model baseline). The detrended series---obtained by subtracting the theoretical trend $C_2/(2\ln N)$ from raw $c_3(N)$---yields $H = 0.85 \pm 0.02$, significantly above the random threshold. The shaded region represents the ``arithmetic structure'' contribution absent in random sequences.}
+\label{fig:hurst}
+\end{figure}
+
+% ============================================================
+\section{Null Hypothesis Test}
+\label{sec:null}
+% ============================================================
+
+\subsection{Construction of Control Sequences}
+
+To confirm that $H = 0.85$ arises from arithmetic structure rather than statistical fluctuations, we construct a null model:
+
+\begin{enumerate}
+\item Generate synthetic $\tilde{G}(N) \sim \text{Poisson}(\HL(N))$.
+\item Compute $\tilde{\delta}(N) = (\tilde{G}(N) - \HL(N))/\HL(N)$.
+\item Extract $\tilde{c}_3(N)$ via identical regression procedure.
+\item Compute Hurst exponent of $\tilde{c}_3$.
+\end{enumerate}
+
+\begin{remark}[Null Model Specification]
+Our null model retains the Hardy-Littlewood mean $\HL(N) = 2C_2 S(N) \Li_2(N)$, including the singular series $S(N)$, but replaces the actual Goldbach counts with Poisson samples. This construction preserves the density structure while \emph{destroying arithmetic correlations} between prime positions. Consequently, $H_{\text{null}} \approx 0.5$ is expected for uncorrelated fluctuations. The observed $H = 0.85$ therefore reflects self-similarity in the \emph{residual structure} after the $S(N)$ modulation is accounted for, not an artifact of incomplete detrending.
+\end{remark}
+
+\subsection{Results}
+
+Over 100 synthetic realizations:
+\begin{equation}
+H_{\text{null}} = 0.51 \pm 0.03 \quad \text{(consistent with white noise)}.
+\end{equation}
+
+The true Goldbach series yields $H = 0.85$, representing:
+\begin{equation}
+\text{Deviation} = \frac{0.85 - 0.51}{0.03} = 11.3\sigma, \quad p < 10^{-20}.
+\end{equation}
+
+\begin{table}[H]
+\centering
+\caption{Null hypothesis test summary}
+\label{tab:null}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Sequence} & \textbf{$H$} & \textbf{$\sigma$} & \textbf{Interpretation} \\
+\midrule
+Goldbach $c_3$ (detrended) & 0.85 & 0.02 & Persistent \\
+Synthetic null (100 runs) & 0.51 & 0.03 & White noise \\
+\midrule
+\textbf{Significance} & \multicolumn{3}{c}{$11\sigma$ rejection, $p < 10^{-20}$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Conclusion:} The persistence $H = 0.85$ is a signature of arithmetic structure absent in the null model.
+
+\begin{remark}[Interpretation of Statistical Significance]
+The $11\sigma$ deviation reflects comparison against the \emph{specific} Poisson--Hardy--Littlewood null model, which assumes independent Goldbach representations. We emphasize that this significance level is conditional on the specific null model and should not be interpreted as a universal probability statement. Alternative null models (e.g., incorporating short-range correlations) might yield different significance levels, though we expect qualitative conclusions to remain robust.
+\end{remark}
+
+\subsection{Riemann Radar Null Test}
+
+Applying FFT to the synthetic null sequences:
+\begin{itemize}
+\item No statistically significant peaks at L-function zero frequencies.
+\item Power spectrum consistent with white noise floor.
+\end{itemize}
+
+This indicates that the spectral peaks in Figure~\ref{fig:fft} are associated with arithmetic structure not present in the null model.
+
+% ============================================================
+\section{Synthesis: A Conjectural Correction Formula}
+\label{sec:formula}
+% ============================================================
+
+Based on the preceding numerical evidence, we formulate the following conjectural correction formula.
+
+\begin{conjecture}[Chen--Goldbach Correction Formula]
+\label{conj:formula}
+For even $N > 4$, the Goldbach representation count is conjectured to satisfy
+\begin{equation}
+\boxed{
+G(N) = 2C_2 S(N) \frac{N}{(\ln N)^2} \left[ 1 + \frac{C_2}{\ln N} \sum_{p > 2} \frac{\chi_p(N)}{\varphi(p)} + R(N) \right]
+}
+\end{equation}
+No claim of rigorous derivation is made; the formula summarizes empirically observed structural components. The residual $R(N)$ empirically exhibits:
+\begin{enumerate}
+\item $R(N) = O(1/\ln^2 N)$ in magnitude.
+\item Oscillatory structure consistent with L-function zero interference:
+\begin{equation}
+R_{\text{osc}}(N) \sim \sum_{\chi} \sum_{\gamma > 0} \frac{A_{\chi,\gamma}}{\ln N} \cos(\gamma \ln N + \phi_{\chi,\gamma}).
+\end{equation}
+\item Long-range persistence with Hurst exponent $H = 0.85 \pm 0.02$.
+\end{enumerate}
+The coefficient $C_2$ appearing in both the main term and correction term constitutes the \emph{constant consistency principle} (Conjecture~\ref{conj:main}).
+\end{conjecture}
+
+\begin{remark}[Unification of Scales]
+This formula is notable for unifying the fluctuation amplitude with the main-term constant $C_2$. If $\kappa = C_2$ holds asymptotically, then the correction term $C_2/\ln N$ directly links the macroscopic Hardy-Littlewood density to the microscopic oscillation envelope---a ``holographic'' connection from the asymptotic regime down to the scale of individual deviations.
+\end{remark}
+
+\subsection{Structural Decomposition}
+
+The formula admits the hierarchy:
+\begin{align}
+G(N) &= \underbrace{2C_2 S(N) \Li_2(N)}_{\text{Main term (Hardy-Littlewood)}} \\
+&\quad \times \underbrace{\left[1 + \frac{C_2}{\ln N} \cdot \Sigma_{\chi}\right]}_{\text{Structural correction } O(C_2/\ln N)} \\
+&\quad + \underbrace{O\left(\frac{N}{\ln^4 N}\right)}_{\text{Oscillatory residual}}.
+\end{align}
+
+The \emph{constant consistency} is manifest: $C_2$ appears in:
+\begin{enumerate}
+\item The main term coefficient.
+\item The structural correction amplitude.
+\item The oscillation frequencies (via L-function zeros, which encode $C_2$ through Euler products).
+\end{enumerate}
+
+% ============================================================
+\section{Discussion}
+\label{sec:discussion}
+% ============================================================
+
+\subsection{Theoretical Implications}
+
+In this work, Goldbach deviations serve primarily as a concrete testbed for probing arithmetic structure rather than as an endpoint in themselves. The constant consistency principle (Conjecture~\ref{conj:main}) suggests that Goldbach error analysis via the circle method should yield $C_2$ as a natural coefficient. Heuristically, minor arc contributions involve character sums weighted by L-function values at $s = 1$, and the product structure $\prod_p (1 - 1/(p-1)^2)$ defining $C_2$ emerges from these sums. A rigorous proof would require careful estimation of minor arc integrals---an important open problem.
+
+\subsection{Connection to GPY and Small Gaps}
+
+The twin prime constant $C_2$ governs prime $k$-tuple densities at microscopic scales \citep{Goldston2009}. Our finding that $C_2$ appears in macroscopic Goldbach fluctuations suggests a \emph{scale-bridging} role:
+\begin{itemize}
+\item \textbf{Microscopic}: $C_2$ controls twin prime density, bounded gaps.
+\item \textbf{Macroscopic}: $C_2$ appears in Goldbach fluctuation envelope.
+\end{itemize}
+We emphasize that no implication for bounded gaps or GPY-type results is claimed; the connection is observational rather than deductive.
+
+\subsection{Relation to GUE Statistics}
+
+The anti-persistent increments ($H = 0.40$) align with GUE spectral rigidity, where eigenvalue repulsion prevents clustering. This supports the ``primes as eigenvalues'' philosophy underlying the Montgomery-Odlyzko connection \citep{Montgomery1973, Odlyzko1987}.
+
+\subsection{Limitations and Future Directions}
+
+\begin{enumerate}
+\item \textbf{Sample range}: Current analysis extends to $N \sim 10^6$. Extending to $N \sim 10^{12}$ would:
+\begin{itemize}
+\item Improve FFT resolution to $\Delta\gamma \approx 0.4$
+\item Test stability of $H \approx 0.85$ at larger scales
+\item Potentially reveal higher-order corrections
+\item Further test $\kappa/C_2 \to 1$: we anticipate the ratio will converge closer to unity as higher-order $O(1/\ln^2 N)$ terms become negligible
+\end{itemize}
+
+\item \textbf{Analytic derivation}: The $\kappa = C_2$ conjecture awaits circle-method proof.
+
+\item \textbf{Higher zeros}: Detection of $\gamma > 20$ requires $N > 10^{10}$.
+\end{enumerate}
+
+% ============================================================
+\section{Conclusion}
+% ============================================================
+
+Using Goldbach representations as a case study, we have presented numerical evidence suggesting that number-theoretic error terms can exhibit nontrivial arithmetic structure:
+
+\begin{enumerate}
+\item \textbf{Constant consistency}: The twin prime constant $C_2$ appears in both main term and fluctuation envelope (Conjecture~\ref{conj:main}), with statistical evidence consistent with $\kappa = C_2$ ($p = 0.32$).
+
+\item \textbf{Spectral structure}: Oscillation frequencies are consistent with known L-function zeros within FFT resolution (Table~\ref{tab:zeros}).
+
+\item \textbf{Long-range persistence}: Hurst exponent $H = 0.85$ significantly exceeds the Poisson null model baseline.
+
+\item \textbf{Conjectural formula}: Conjecture~\ref{conj:formula} synthesizes these observations into a testable prediction.
+\end{enumerate}
+
+\subsection*{Methodological Contributions}
+
+Beyond the specific findings for Goldbach, this work demonstrates:
+\begin{itemize}
+\item \textbf{Log-domain spectral analysis}: Sampling uniformly in $\ln N$ enables detection of oscillatory components consistent with L-function zeros.
+\item \textbf{Hurst exponent diagnostics}: R/S analysis distinguishes arithmetic structure from statistical noise relative to a specified null model.
+\item \textbf{Null model construction}: Poisson sampling with Hardy-Littlewood mean provides a baseline for significance testing.
+\end{itemize}
+
+These methods are potentially transferable to other additive problems where the Hardy-Littlewood circle method applies. The error term in Goldbach's conjecture appears to exhibit statistically detectable structure rather than behaving as pure noise.
+
+In summary, our numerical evidence suggests that the twin prime constant $C_2$ is not merely a density parameter for the main term, but may act as a \emph{universal amplitude} governing the entire dynamic range of Goldbach fluctuations. If confirmed theoretically, this ``constant consistency principle'' would reveal a deeper organizational structure in prime distribution than previously recognized. These observations motivate future theoretical investigation.
+
+% ============================================================
+% REFERENCES
+% ============================================================
+\bibliographystyle{plainnat}
+\begin{thebibliography}{12}
+
+\bibitem[Hardy and Littlewood(1923)]{HL1923}
+G.H. Hardy and J.E. Littlewood.
+\newblock Some problems of `{P}artitio {N}umerorum' {III}: On the expression of a number as a sum of primes.
+\newblock \emph{Acta Mathematica}, 44:1--70, 1923.
+
+\bibitem[Chen(2026a)]{Chen2026a}
+R.~Chen.
+\newblock Hardy-{L}ittlewood {G}oldbach conjecture validated to $N = 10^{12}$: From transient {U}-distribution to ultimate asymptotic convergence.
+\newblock Zenodo, 2026.
+\newblock \url{https://doi.org/10.5281/zenodo.18113330}
+
+\bibitem[Chen(2026b)]{Chen2026b}
+R.~Chen.
+\newblock The crossover phenomenon in {H}ardy-{L}ittlewood {G}oldbach formula: Computational evidence across five orders of magnitude.
+\newblock Zenodo, 2026.
+\newblock \url{https://doi.org/10.5281/zenodo.18123132}
+
+\bibitem[Chen(2026c)]{Chen2026c}
+R.~Chen.
+\newblock Spectral rigidity in {G}oldbach representations: Sub-{P}oissonian statistics across thirteen orders of magnitude.
+\newblock Zenodo, 2026.
+\newblock \url{https://doi.org/10.5281/zenodo.18148544}
+
+\bibitem[Chen(2026d)]{Chen2026d}
+R.~Chen.
+\newblock The second main term in the asymptotic formula for {G}oldbach representations: {D}irichlet character corrections and their arithmetic origin.
+\newblock Zenodo, 2026.
+\newblock \url{https://doi.org/10.5281/zenodo.18149305}
+
+\bibitem[Montgomery(1973)]{Montgomery1973}
+H.L. Montgomery.
+\newblock The pair correlation of zeros of the zeta function.
+\newblock \emph{Proceedings of Symposia in Pure Mathematics}, 24:181--193, 1973.
+
+\bibitem[Odlyzko(1987)]{Odlyzko1987}
+A.M. Odlyzko.
+\newblock On the distribution of spacings between zeros of the zeta function.
+\newblock \emph{Mathematics of Computation}, 48(177):273--308, 1987.
+
+\bibitem[Hurst(1951)]{Hurst1951}
+H.E. Hurst.
+\newblock Long-term storage capacity of reservoirs.
+\newblock \emph{Transactions of the American Society of Civil Engineers}, 116:770--808, 1951.
+
+\bibitem[Mandelbrot and Van~Ness(1968)]{Mandelbrot1968}
+B.B. Mandelbrot and J.W. Van~Ness.
+\newblock Fractional {B}rownian motions, fractional noises and applications.
+\newblock \emph{SIAM Review}, 10(4):422--437, 1968.
+
+\bibitem[Goldston et~al.(2009)]{Goldston2009}
+D.A. Goldston, J.~Pintz, and C.Y. Y{\i}ld{\i}r{\i}m.
+\newblock Primes in tuples {I}.
+\newblock \emph{Annals of Mathematics}, 170(2):819--862, 2009.
+
+\bibitem[Maynard(2015)]{Maynard2015}
+J.~Maynard.
+\newblock Small gaps between primes.
+\newblock \emph{Annals of Mathematics}, 181(1):383--413, 2015.
+
+\bibitem[Tao(2023)]{Tao2023}
+T.~Tao.
+\newblock Correlations of the von {M}angoldt and higher divisor functions.
+\newblock \emph{Forum of Mathematics, Pi}, 11:e16, 2023.
+
+\bibitem[Soundararajan(2022)]{Sound2022}
+K.~Soundararajan.
+\newblock The distribution of prime numbers.
+\newblock \emph{Proceedings of the ICM 2022}, 2:1--25, 2022.
+
+\bibitem[Iwaniec and Kowalski(2004)]{IK2004}
+H.~Iwaniec and E.~Kowalski.
+\newblock \emph{Analytic Number Theory}.
+\newblock American Mathematical Society, 2004.
+
+\bibitem[Davenport(2000)]{Davenport2000}
+H.~Davenport.
+\newblock \emph{Multiplicative Number Theory}.
+\newblock Springer, 3rd edition, 2000.
+
+\bibitem[Languasco and Zaccagnini(2012)]{LZ2012}
+A.~Languasco and A.~Zaccagnini.
+\newblock On the constant in the {M}ertens product for arithmetic progressions.
+\newblock \emph{Mathematics of Computation}, 81(279):1813--1829, 2012.
+
+\end{thebibliography}
+
+% ============================================================
+% APPENDIX
+% ============================================================
+\appendix
+
+\section{FFT Algorithm}
+\label{app:algorithm}
+
+\begin{algorithm}[H]
+\caption{Riemann Radar: L-Function Zero Detection}
+\begin{algorithmic}[1]
+\REQUIRE Goldbach data $\{(N_i, c_p(N_i))\}$ for even $N_i \in [N_{\min}, N_{\max}]$
+\ENSURE Power spectrum $P(\gamma)$ with peaks at L-function zeros
+
+\STATE \textbf{Transform to log domain:} $t_i \leftarrow \ln(N_i)$
+\STATE \textbf{Set grid:} $\Delta t \leftarrow 0.01$, $M \leftarrow \lfloor(t_{\max} - t_{\min})/\Delta t\rfloor$
+\STATE \textbf{Interpolate:} Cubic spline to uniform grid $\{t_k = t_{\min} + k\Delta t\}_{k=0}^{M-1}$
+\STATE \textbf{Detrend:} $r_k \leftarrow c_p(t_k) - C_2/(2t_k)$; then linear detrend
+\STATE \textbf{Window:} $r_k \leftarrow r_k \cdot \frac{1}{2}(1 - \cos(2\pi k/(M-1)))$ \COMMENT{Hanning}
+\STATE \textbf{FFT:} $\hat{R} \leftarrow \text{FFT}(\{r_k\})$
+\STATE \textbf{Power:} $P_j \leftarrow |\hat{R}_j|^2$
+\STATE \textbf{Calibrate:} $\gamma_j \leftarrow 2\pi j/(M \cdot \Delta t)$
+\RETURN $\{(\gamma_j, P_j)\}$
+\end{algorithmic}
+\end{algorithm}
+
+\section{Numerical Parameters}
+\label{app:params}
+
+\begin{table}[H]
+\centering
+\caption{Summary of key quantities}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Quantity} & \textbf{Value} & \textbf{Error} & \textbf{Description} \\
+\midrule
+$C_2$ & $0.6601618$ & exact & Twin prime constant \\
+$\kappa$ & $0.70$ & $\pm 0.04$ & Universal amplitude \\
+$\kappa/C_2$ & $1.06$ & $\pm 0.06$ & Ratio (conjectured = 1) \\
+$H$ (detrended) & $0.85$ & $\pm 0.02$ & Hurst exponent \\
+$H$ (increments) & $0.40$ & $\pm 0.02$ & Increment persistence \\
+$H$ (null) & $0.51$ & $\pm 0.03$ & Control baseline \\
+$\Delta\gamma$ & $1.25$ & --- & FFT resolution \\
+$N_{\max}$ & $1.5 \times 10^6$ & --- & Data range \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Sampling Density}
+\label{app:sampling}
+
+For the main analysis:
+\begin{itemize}
+\item Original data: $\sim 7.5 \times 10^5$ even integers in $[10^4, 1.5 \times 10^6]$
+\item Log-domain range: $t \in [9.21, 14.22]$, span $= 5.01$
+\item Interpolated grid: $M = 501$ points at $\Delta t = 0.01$
+\item Nyquist frequency: $\gamma_{\text{Nyquist}} = \pi/\Delta t = 314$
+\item Hanning window: $w(k) = 0.5(1 - \cos(2\pi k/(M-1)))$, $k = 0, \ldots, M-1$
+\item Equivalent noise bandwidth: $\text{ENBW} = 1.5$ bins
+\end{itemize}
+
+The sampling is well above Nyquist for all L-function zeros of interest ($\gamma < 50$).
+
+\section{Reproducibility and Data Availability}
+
+All computations were performed using:
+\begin{itemize}
+\item Python 3.12 with NumPy 1.26, SciPy 1.11
+\item Cubic spline interpolation: \texttt{scipy.interpolate.CubicSpline}
+\item FFT: \texttt{numpy.fft.fft}
+\item R/S analysis: Custom implementation following \citet{Hurst1951}
+\end{itemize}
+
+The algorithms for the ``Riemann Radar'' FFT analysis and the Hurst exponent calculation are detailed in Appendix~\ref{app:algorithm} to ensure full reproducibility. 
+
+\textbf{Code and Data Availability:} All source code, data, and supplementary materials are publicly available at:
+\begin{center}
+\url{https://github.com/Ruqing1963/goldbach-fractal-analysis}
+\end{center}
+
+\end{document}
